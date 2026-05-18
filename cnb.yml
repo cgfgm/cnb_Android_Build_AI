@@ -2,9 +2,8 @@ version: 2.0
 
 variables:
   AVIUM_MANIFEST_URL: "https://github.com/AviumUI/android_manifests"
-  AVIUM_BRANCH: "15"
+  AVIUM_BRANCH: "avium-16.2"
   AVIUM_MANIFEST_FILE: "default.xml"
-  DEVICE_BRANCH: "lineage-22.2"
   SOURCE_DIR: "avium"
 
 stages:
@@ -63,25 +62,6 @@ stages:
           - repo init -u "$AVIUM_MANIFEST_URL" -b "$AVIUM_BRANCH" -m "$AVIUM_MANIFEST_FILE" --git-lfs --depth=1
           - repo sync -c --force-sync --no-clone-bundle --no-tags --retry-fetches=3 -j"$(nproc --all)"
 
-  - name: clone_device_trees
-    jobs:
-      - name: fetch_mondrian_deps
-        image: tencentcom/mirror:ubuntu2204
-        script:
-          - set -e
-          - apt-get update
-          - apt-get install -y git
-          - cd "$SOURCE_DIR"
-          - rm -rf device/xiaomi/mondrian device/xiaomi/sm8450-common kernel/xiaomi/sm8450 kernel/xiaomi/sm8450-devicetrees kernel/xiaomi/sm8450-modules vendor/xiaomi/mondrian vendor/xiaomi/sm8450-common
-          - mkdir -p device/xiaomi kernel/xiaomi vendor/xiaomi
-          - git clone --depth=1 -b "$DEVICE_BRANCH" https://github.com/LineageOS/android_device_xiaomi_mondrian.git device/xiaomi/mondrian
-          - git clone --depth=1 -b "$DEVICE_BRANCH" https://github.com/LineageOS/android_device_xiaomi_sm8450-common.git device/xiaomi/sm8450-common
-          - git clone --depth=1 -b "$DEVICE_BRANCH" https://github.com/LineageOS/android_kernel_xiaomi_sm8450.git kernel/xiaomi/sm8450
-          - git clone --depth=1 -b "$DEVICE_BRANCH" https://github.com/LineageOS/android_kernel_xiaomi_sm8450-devicetrees.git kernel/xiaomi/sm8450-devicetrees
-          - git clone --depth=1 -b "$DEVICE_BRANCH" https://github.com/LineageOS/android_kernel_xiaomi_sm8450-modules.git kernel/xiaomi/sm8450-modules
-          - git clone --depth=1 -b "$DEVICE_BRANCH" https://github.com/TheMuppets/proprietary_vendor_xiaomi_mondrian.git vendor/xiaomi/mondrian
-          - git clone --depth=1 -b "$DEVICE_BRANCH" https://github.com/TheMuppets/proprietary_vendor_xiaomi_sm8450-common.git vendor/xiaomi/sm8450-common
-
   - name: setup_build_environment
     jobs:
       - name: source_envsetup
@@ -106,4 +86,4 @@ stages:
           - test -d kernel/xiaomi/sm8450-modules
           - test -d vendor/xiaomi/mondrian
           - test -d vendor/xiaomi/sm8450-common
-          - echo "Avium source, dependencies, and build environment setup are ready."
+          - echo "Avium source and build environment setup are ready."
