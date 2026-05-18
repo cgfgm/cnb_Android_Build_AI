@@ -1,0 +1,89 @@
+version: 2.0
+
+variables:
+  AVIUM_MANIFEST_URL: "https://github.com/AviumUI/android_manifests"
+  AVIUM_BRANCH: "avium-16.2"
+  AVIUM_MANIFEST_FILE: "default.xml"
+  SOURCE_DIR: "avium"
+
+stages:
+  - name: sync_avium_source
+    jobs:
+      - name: init_sync_and_prepare
+        image: tencentcom/mirror:ubuntu2204
+        script:
+          - set -e
+          - export DEBIAN_FRONTEND=noninteractive
+          - apt-get update
+          - apt-get install -y \
+              adb \
+              bc \
+              bison \
+              build-essential \
+              ccache \
+              curl \
+              flex \
+              g++-multilib \
+              gcc-multilib \
+              git \
+              git-lfs \
+              gnupg \
+              gperf \
+              imagemagick \
+              lib32ncurses5-dev \
+              lib32readline-dev \
+              lib32z1-dev \
+              libelf-dev \
+              libgl1-mesa-dev \
+              liblz4-tool \
+              libncurses5 \
+              libncurses5-dev \
+              libsdl1.2-dev \
+              libssl-dev \
+              libxml2 \
+              libxml2-utils \
+              lzop \
+              pngcrush \
+              python3 \
+              python-is-python3 \
+              rsync \
+              schedtool \
+              squashfs-tools \
+              unzip \
+              x11proto-core-dev \
+              xsltproc \
+              zip \
+              zlib1g-dev
+          - mkdir -p "$SOURCE_DIR"
+          - cd "$SOURCE_DIR"
+          - if ! command -v repo >/dev/null 2>&1; then curl -fsSL https://storage.googleapis.com/git-repo-downloads/repo -o /usr/local/bin/repo && chmod a+x /usr/local/bin/repo; fi
+          - git config --global user.name "CNB Bot"
+          - git config --global user.email "cnb-bot@example.com"
+          - repo init -u "$AVIUM_MANIFEST_URL" -b "$AVIUM_BRANCH" -m "$AVIUM_MANIFEST_FILE" --git-lfs --depth=1
+          - repo sync -c --force-sync --no-clone-bundle --no-tags --retry-fetches=3 -j"$(nproc --all)"
+
+  - name: setup_build_environment
+    jobs:
+      - name: source_envsetup
+        image: tencentcom/mirror:ubuntu2204
+        script:
+          - set -e
+          - cd "$SOURCE_DIR"
+          - test -f build/envsetup.sh
+          - /bin/bash -lc 'cd "$SOURCE_DIR" && . build/envsetup.sh && echo "envsetup_loaded"'
+
+  - name: verify_checkout
+    jobs:
+      - name: check_tree
+        image: tencentcom/mirror:ubuntu2204
+        script:
+          - set -e
+          - cd "$SOURCE_DIR"
+          - test -d device/xiaomi/mondrian
+          - test -d device/xiaomi/sm8450-common
+          - test -d kernel/xiaomi/sm8450
+          - test -d kernel/xiaomi/sm8450-devicetrees
+          - test -d kernel/xiaomi/sm8450-modules
+          - test -d vendor/xiaomi/mondrian
+          - test -d vendor/xiaomi/sm8450-common
+          - echo "Avium source and build environment setup are ready."
